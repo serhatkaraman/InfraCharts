@@ -229,6 +229,8 @@ extraObjects:
               - path: "mongodb/Chart.yaml"
               - path: "external-dns/Chart.yaml"
               - path: "jenkins/Chart.yaml"
+              - path: "elasticsearch/Chart.yaml"
+              - path: "fluent-bit/Chart.yaml"
       template:
         metadata:
           name: 'dreamgames-case-{{ "{{" }} index .path.segments 0 {{ "}}" }}'

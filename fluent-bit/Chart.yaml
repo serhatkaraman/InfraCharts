@@ -1,0 +1,13 @@
+apiVersion: v2
+name: fluent-bit
+version: 0.1.0
+description: Fluent Bit (container logs DaemonSet + Kubernetes events) for dreamgames-case
+dependencies:
+  - name: fluent-bit
+    alias: logs
+    version: 0.57.7
+    repository: https://fluent.github.io/helm-charts
+  - name: fluent-bit
+    alias: events
+    version: 0.57.7
+    repository: https://fluent.github.io/helm-charts
