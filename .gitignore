@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Helm
+charts/
+*.tgz
+
+# Secrets
+*.key
+*.pem
+secrets.yaml
+*-secret.yaml
+
+# Logs
+*.log

@@ -48,3 +48,6 @@ clusterIssuer:
 
 godaddy-webhook:
   groupName: acme.myturkishdish.com
+  certManager:
+    namespace: cert-manager
+    serviceAccountName: dreamgames-case-cert-manager
