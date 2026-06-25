@@ -1,0 +1,11 @@
+apiVersion: v2
+name: cert-manager
+version: 0.1.0
+description: cert-manager + Let's Encrypt ClusterIssuers for dreamgames-case
+dependencies:
+  - name: cert-manager
+    version: v1.16.2
+    repository: https://charts.jetstack.io/
+  - name: godaddy-webhook
+    version: 0.7.0
+    repository: https://snowdrop.github.io/godaddy-webhook
