@@ -600,10 +600,15 @@ repoServer:
       image: alpine:3.20
       command: [sh, -c]
       args:
-        - >-
-          wget -O /custom-tools/argocd-vault-plugin
-          https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v1.18.1/argocd-vault-plugin_1.18.1_linux_amd64
-          && chmod +x /custom-tools/argocd-vault-plugin
+        - |
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64) ARCH=amd64 ;;
+            aarch64|arm64) ARCH=arm64 ;;
+          esac
+          wget -O /custom-tools/argocd-vault-plugin \
+            "https://github.com/argoproj-labs/argocd-vault-plugin/releases/download/v1.18.1/argocd-vault-plugin_1.18.1_linux_${ARCH}"
+          chmod +x /custom-tools/argocd-vault-plugin
       volumeMounts:
         - mountPath: /custom-tools
           name: custom-tools
