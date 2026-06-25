@@ -206,6 +206,36 @@ extraObjects:
           - ServerSideApply=true
 
   ###########################################################################
+  # Application - Fluent Bit (deployed into elasticsearch ns to read ES secret)
+  ###########################################################################
+  - apiVersion: argoproj.io/v1alpha1
+    kind: Application
+    metadata:
+      name: dreamgames-case-fluent-bit
+      namespace: argocd
+    spec:
+      project: dreamgames-case
+      source:
+        repoURL: "https://github.com/serhatkaraman/InfraCharts"
+        targetRevision: master
+        path: fluent-bit
+        plugin:
+          name: avp-helm
+          env:
+            - name: HELM_ARGS
+              value: "-f values.yaml"
+      destination:
+        server: "https://kubernetes.default.svc"
+        namespace: elasticsearch
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+
+  ###########################################################################
   # ApplicationSet - Infra
   ###########################################################################
   - apiVersion: argoproj.io/v1alpha1
@@ -226,11 +256,10 @@ extraObjects:
               - path: "alloy/Chart.yaml"
               - path: "metrics-server/Chart.yaml"
               - path: "cert-manager/Chart.yaml"
-              - path: "mongodb/Chart.yaml"
               - path: "external-dns/Chart.yaml"
               - path: "jenkins/Chart.yaml"
+              - path: "eck-operator/Chart.yaml"
               - path: "elasticsearch/Chart.yaml"
-              - path: "fluent-bit/Chart.yaml"
       template:
         metadata:
           name: 'dreamgames-case-{{ "{{" }} index .path.segments 0 {{ "}}" }}'

@@ -2,6 +2,12 @@ logs:
   kind: DaemonSet
   tolerations:
     - operator: Exists
+  env:
+    - name: ES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: dreamgames-es-es-elastic-user
+          key: elastic
   config:
     service: |
       [SERVICE]
@@ -33,8 +39,12 @@ logs:
       [OUTPUT]
           Name es
           Match kube.*
-          Host dreamgames-es-master.elasticsearch.svc.cluster.local
+          Host dreamgames-es-es-http.elasticsearch.svc.cluster.local
           Port 9200
+          tls On
+          tls.verify Off
+          HTTP_User elastic
+          HTTP_Passwd ${ES_PASSWORD}
           Logstash_Format On
           Logstash_Prefix kube
           Suppress_Type_Name On
@@ -47,6 +57,12 @@ events:
   rbac:
     create: true
     eventsAccess: true
+  env:
+    - name: ES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: dreamgames-es-es-elastic-user
+          key: elastic
   config:
     service: |
       [SERVICE]
@@ -67,8 +83,12 @@ events:
       [OUTPUT]
           Name es
           Match k8s_events
-          Host dreamgames-es-master.elasticsearch.svc.cluster.local
+          Host dreamgames-es-es-http.elasticsearch.svc.cluster.local
           Port 9200
+          tls On
+          tls.verify Off
+          HTTP_User elastic
+          HTTP_Passwd ${ES_PASSWORD}
           Logstash_Format On
           Logstash_Prefix k8s-events
           Suppress_Type_Name On

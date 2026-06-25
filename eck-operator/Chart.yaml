@@ -1,0 +1,8 @@
+apiVersion: v2
+name: eck-operator
+version: 0.1.0
+description: Elastic Cloud on Kubernetes (ECK) operator for dreamgames-case
+dependencies:
+  - name: eck-operator
+    version: 3.4.1
+    repository: https://helm.elastic.co

@@ -1,11 +1,4 @@
 apiVersion: v2
 name: elasticsearch
 version: 0.1.0
-description: Elasticsearch + Kibana for dreamgames-case (log store & query)
-dependencies:
-  - name: elasticsearch
-    version: 8.5.1
-    repository: https://helm.elastic.co
-  - name: kibana
-    version: 8.5.1
-    repository: https://helm.elastic.co
+description: Elasticsearch + Kibana (ECK custom resources) for dreamgames-case

@@ -1,58 +1,9 @@
-elasticsearch:
-  clusterName: dreamgames-es
-  replicas: 1
-  minimumMasterNodes: 1
+esName: dreamgames-es
+kibanaName: dreamgames-kibana
+version: 8.16.1
 
-  createCert: false
-  secret:
-    enabled: false
-  protocol: http
+storage:
+  size: 8Gi
+  storageClass: local-path
 
-  esConfig:
-    elasticsearch.yml: |
-      xpack.security.enabled: false
-
-  clusterHealthCheckParams: "wait_for_status=yellow&timeout=10s"
-  esJavaOpts: "-Xms512m -Xmx512m"
-
-  resources:
-    requests:
-      cpu: 250m
-      memory: 1Gi
-    limits:
-      cpu: "1"
-      memory: 2Gi
-
-  volumeClaimTemplate:
-    accessModes:
-      - ReadWriteOnce
-    storageClassName: local-path
-    resources:
-      requests:
-        storage: 8Gi
-
-kibana:
-  elasticsearchHosts: "http://dreamgames-es-master:9200"
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 512Mi
-    limits:
-      cpu: 500m
-      memory: 1Gi
-
-  ingress:
-    enabled: true
-    className: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      external-dns.alpha.kubernetes.io/hostname: kibana.myturkishdish.com
-    hosts:
-      - host: kibana.myturkishdish.com
-        paths:
-          - path: /
-    tls:
-      - secretName: kibana-tls
-        hosts:
-          - kibana.myturkishdish.com
+kibanaHost: kibana.myturkishdish.com
