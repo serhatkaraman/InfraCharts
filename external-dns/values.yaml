@@ -4,6 +4,7 @@ external-dns:
 
   sources:
     - service
+    - ingress
 
   domainFilters:
     - myturkishdish.com
