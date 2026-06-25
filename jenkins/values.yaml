@@ -126,66 +126,27 @@ pipeline:
       environment {
         REGISTRY       = 'docker.io'
         IMAGE          = 'serhatkaraman/javaapp'
+        APP_REPO       = 'https://github.com/serhatkaraman/JavaApp.git'
+        APP_BRANCH     = 'master'
+        DEPLOY_ENV     = 'dev'
         APPCHARTS_REPO = 'github.com/serhatkaraman/AppCharts'
         APPCHARTS_FILE = 'JavaApp/values.yaml'
       }
 
       triggers {
-        GenericTrigger(
-          genericVariables: [
-            [key: 'GH_REF',      value: '$.ref'],
-            [key: 'GH_REFTYPE',  value: '$.ref_type'],
-            [key: 'GH_ACTION',   value: '$.action'],
-            [key: 'GH_RELTAG',   value: '$.release.tag_name'],
-            [key: 'GH_CLONEURL', value: '$.repository.clone_url']
-          ],
-          genericHeaderVariables: [
-            [key: 'X-GitHub-Event', regexpFilter: '']
-          ],
-          tokenCredentialId: 'webhook-token',
-          causeString: 'GitHub $x_github_event',
-          printContributedVariables: true,
-          printPostContent: false,
-          regexpFilterText: '$x_github_event',
-          regexpFilterExpression: '^(push|create|release)$'
-        )
+        pollSCM('H/2 * * * *')
       }
 
       stages {
-        stage('Resolve') {
-          steps {
-            script {
-              def ev = env.x_github_event
-              if (ev == 'push' && env.GH_REF == 'refs/heads/master') {
-                env.DEPLOY_ENV = 'dev'
-                env.REF_NAME = 'master'
-                env.CHECKOUT_REF = 'master'
-              } else if (ev == 'create' && env.GH_REFTYPE == 'tag') {
-                env.DEPLOY_ENV = 'staging'
-                env.REF_NAME = env.GH_REF
-                env.CHECKOUT_REF = 'refs/tags/' + env.GH_REF
-              } else if (ev == 'release' && env.GH_ACTION == 'published') {
-                env.DEPLOY_ENV = 'prod'
-                env.REF_NAME = env.GH_RELTAG
-                env.CHECKOUT_REF = 'refs/tags/' + env.GH_RELTAG
-              } else {
-                currentBuild.result = 'NOT_BUILT'
-                error('No matching trigger: event=' + ev + ' ref=' + env.GH_REF)
-              }
-              echo "env=${env.DEPLOY_ENV} ref=${env.REF_NAME}"
-            }
-          }
-        }
-
         stage('Checkout') {
           steps {
             checkout([$class: 'GitSCM',
-              branches: [[name: env.CHECKOUT_REF]],
-              userRemoteConfigs: [[url: env.GH_CLONEURL, credentialsId: 'git-credentials']]
+              branches: [[name: '*/' + env.APP_BRANCH]],
+              userRemoteConfigs: [[url: env.APP_REPO, credentialsId: 'git-credentials']]
             ])
             script {
               env.COMMIT6 = sh(script: 'git rev-parse --short=6 HEAD', returnStdout: true).trim()
-              env.IMAGE_TAG = env.REF_NAME + '-' + env.COMMIT6
+              env.IMAGE_TAG = env.APP_BRANCH + '-' + env.COMMIT6
               echo "Building ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
             }
           }
@@ -206,7 +167,6 @@ pipeline:
         }
 
         stage('Promote dev') {
-          when { environment name: 'DEPLOY_ENV', value: 'dev' }
           steps {
             container('tools') {
               withCredentials([usernamePassword(credentialsId: 'git-credentials', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
