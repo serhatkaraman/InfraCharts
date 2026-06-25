@@ -13,12 +13,12 @@ external-dns:
   txtOwnerId: dreamgames-dev
 
   env:
-    - name: GODADDY_API_KEY
+    - name: EXTERNAL_DNS_GODADDY_API_KEY
       valueFrom:
         secretKeyRef:
           name: external-dns-godaddy
           key: GODADDY_API_KEY
-    - name: GODADDY_API_SECRET
+    - name: EXTERNAL_DNS_GODADDY_API_SECRET
       valueFrom:
         secretKeyRef:
           name: external-dns-godaddy
