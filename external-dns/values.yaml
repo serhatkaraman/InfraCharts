@@ -1,0 +1,25 @@
+external-dns:
+  provider:
+    name: godaddy
+
+  sources:
+    - service
+
+  domainFilters:
+    - myturkishdish.com
+
+  policy: upsert-only
+  registry: txt
+  txtOwnerId: dreamgames-dev
+
+  env:
+    - name: GODADDY_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: external-dns-godaddy
+          key: GODADDY_API_KEY
+    - name: GODADDY_API_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: external-dns-godaddy
+          key: GODADDY_API_SECRET

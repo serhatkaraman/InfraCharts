@@ -227,6 +227,7 @@ extraObjects:
               - path: "metrics-server/Chart.yaml"
               - path: "cert-manager/Chart.yaml"
               - path: "mongodb/Chart.yaml"
+              - path: "external-dns/Chart.yaml"
       template:
         metadata:
           name: 'dreamgames-case-{{ "{{" }} index .path.segments 0 {{ "}}" }}'
