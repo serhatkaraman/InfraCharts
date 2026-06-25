@@ -133,6 +133,8 @@ kube-prometheus-stack:
   grafana:
     namespaceOverride: monitoring
     adminPassword: <path:secret/data/argocd#grafana_admin_password>
+    initChownData:
+      enabled: false
     sidecar:
       datasources:
         defaultDatasourceEnabled: true
