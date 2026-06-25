@@ -1,0 +1,218 @@
+jenkins:
+  controller:
+    installLatestPlugins: true
+    nodeSelector:
+      kubernetes.io/hostname: node-2
+    additionalPlugins:
+      - job-dsl
+      - generic-webhook-trigger
+
+    containerEnv:
+      - name: GIT_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: jenkins-git
+            key: username
+      - name: GIT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: jenkins-git
+            key: token
+      - name: WEBHOOK_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: jenkins-git
+            key: webhook-token
+
+    JCasC:
+      defaultConfig: true
+      configScripts:
+        job-dsl-security: |
+          security:
+            globalJobDslSecurityConfiguration:
+              useScriptSecurity: false
+        credentials: |
+          credentials:
+            system:
+              domainCredentials:
+                - credentials:
+                    - usernamePassword:
+                        scope: GLOBAL
+                        id: git-credentials
+                        username: ${GIT_USERNAME}
+                        password: ${GIT_TOKEN}
+                    - string:
+                        scope: GLOBAL
+                        id: webhook-token
+                        secret: ${WEBHOOK_TOKEN}
+        seed-job: |
+          jobs:
+            - script: |
+                pipelineJob('app-ci') {
+                  definition {
+                    cps {
+                      sandbox(true)
+                      script(new File('/var/jenkins_config/pipeline/Jenkinsfile').text)
+                    }
+                  }
+                }
+
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 8Gi
+    volumes:
+      - name: pipeline
+        configMap:
+          name: jenkins-pipeline
+    mounts:
+      - name: pipeline
+        mountPath: /var/jenkins_config/pipeline
+        readOnly: true
+
+  agent:
+    enabled: true
+
+pipeline:
+  # REGISTRY/IMAGE buradan düzenlenir; imaj tag'i: <branch|tag>-<commit6>
+  jenkinsfile: |
+    pipeline {
+      agent {
+        kubernetes {
+          defaultContainer 'jnlp'
+          yaml """
+    apiVersion: v1
+    kind: Pod
+    spec:
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:debug
+          command: ['sleep']
+          args: ['99d']
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker
+        - name: tools
+          image: alpine:3.20
+          command: ['sleep']
+          args: ['99d']
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: jenkins-registry
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+    """
+        }
+      }
+
+      options {
+        timestamps()
+        disableConcurrentBuilds()
+      }
+
+      environment {
+        REGISTRY       = 'docker.io'
+        IMAGE          = 'serhatkaraman/javaapp'
+        APPCHARTS_REPO = 'github.com/serhatkaraman/AppCharts'
+        APPCHARTS_FILE = 'JavaApp/values.yaml'
+      }
+
+      triggers {
+        GenericTrigger(
+          genericVariables: [
+            [key: 'GH_REF',      value: '$.ref'],
+            [key: 'GH_REFTYPE',  value: '$.ref_type'],
+            [key: 'GH_ACTION',   value: '$.action'],
+            [key: 'GH_RELTAG',   value: '$.release.tag_name'],
+            [key: 'GH_CLONEURL', value: '$.repository.clone_url']
+          ],
+          genericHeaderVariables: [
+            [key: 'X-GitHub-Event', regexpFilter: '']
+          ],
+          tokenCredentialId: 'webhook-token',
+          causeString: 'GitHub $x_github_event',
+          printContributedVariables: true,
+          printPostContent: false,
+          regexpFilterText: '$x_github_event',
+          regexpFilterExpression: '^(push|create|release)$'
+        )
+      }
+
+      stages {
+        stage('Resolve') {
+          steps {
+            script {
+              def ev = env.x_github_event
+              if (ev == 'push' && env.GH_REF == 'refs/heads/master') {
+                env.DEPLOY_ENV = 'dev'
+                env.REF_NAME = 'master'
+                env.CHECKOUT_REF = 'master'
+              } else if (ev == 'create' && env.GH_REFTYPE == 'tag') {
+                env.DEPLOY_ENV = 'staging'
+                env.REF_NAME = env.GH_REF
+                env.CHECKOUT_REF = 'refs/tags/' + env.GH_REF
+              } else if (ev == 'release' && env.GH_ACTION == 'published') {
+                env.DEPLOY_ENV = 'prod'
+                env.REF_NAME = env.GH_RELTAG
+                env.CHECKOUT_REF = 'refs/tags/' + env.GH_RELTAG
+              } else {
+                currentBuild.result = 'NOT_BUILT'
+                error('No matching trigger: event=' + ev + ' ref=' + env.GH_REF)
+              }
+              echo "env=${env.DEPLOY_ENV} ref=${env.REF_NAME}"
+            }
+          }
+        }
+
+        stage('Checkout') {
+          steps {
+            checkout([$class: 'GitSCM',
+              branches: [[name: env.CHECKOUT_REF]],
+              userRemoteConfigs: [[url: env.GH_CLONEURL, credentialsId: 'git-credentials']]
+            ])
+            script {
+              env.COMMIT6 = sh(script: 'git rev-parse --short=6 HEAD', returnStdout: true).trim()
+              env.IMAGE_TAG = env.REF_NAME + '-' + env.COMMIT6
+              echo "Building ${env.REGISTRY}/${env.IMAGE}:${env.IMAGE_TAG}"
+            }
+          }
+        }
+
+        stage('Build & Push') {
+          steps {
+            container('kaniko') {
+              sh '''
+                /kaniko/executor \
+                  --context ${WORKSPACE} \
+                  --dockerfile ${WORKSPACE}/Dockerfile \
+                  --destination ${REGISTRY}/${IMAGE}:${IMAGE_TAG} \
+                  --destination ${REGISTRY}/${IMAGE}:${DEPLOY_ENV}
+              '''
+            }
+          }
+        }
+
+        stage('Promote dev') {
+          when { environment name: 'DEPLOY_ENV', value: 'dev' }
+          steps {
+            container('tools') {
+              withCredentials([usernamePassword(credentialsId: 'git-credentials', usernameVariable: 'GH_USER', passwordVariable: 'GH_TOKEN')]) {
+                sh '''
+                  apk add --no-cache git yq >/dev/null
+                  git config --global user.email "jenkins@dreamgames-case"
+                  git config --global user.name "jenkins-ci"
+                  rm -rf appcharts
+                  git clone https://${GH_USER}:${GH_TOKEN}@${APPCHARTS_REPO}.git appcharts
+                  cd appcharts
+                  yq -i '.image.tag = strenv(IMAGE_TAG)' ${APPCHARTS_FILE}
+                  git commit -am "ci(javaapp): dev image ${IMAGE_TAG}" || echo "no change"
+                  git push origin HEAD:master
+                '''
+              }
+            }
+          }
+        }
+      }
+    }
