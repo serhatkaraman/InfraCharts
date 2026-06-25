@@ -3,6 +3,18 @@ jenkins:
     installLatestPlugins: true
     nodeSelector:
       kubernetes.io/hostname: node-2
+    jenkinsUrl: "https://jenkins.myturkishdish.com"
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hostName: jenkins.myturkishdish.com
+      annotations:
+        cert-manager.io/cluster-issuer: "letsencrypt-prod"
+        external-dns.alpha.kubernetes.io/hostname: jenkin.myturkishdish.com
+      tls:
+        - secretName: jenkins-tls
+          hosts:
+            - jenkins.myturkishdish.com
     additionalPlugins:
       - job-dsl
       - generic-webhook-trigger
