@@ -271,10 +271,10 @@ extraObjects:
             repoURL: "https://github.com/serhatkaraman/AppCharts"
             revision: master
             files:
-              - path: "*/values/dev/values.yaml"
+              - path: "*/Chart.yaml"
       template:
         metadata:
-          name: 'dreamgames-case-dev-{{ "{{" }} index .path.segments 0 {{ "}}" }}'
+          name: 'dreamgames-case-dev-{{ "{{" }} index .path.segments 0 | lower {{ "}}" }}'
           namespace: argocd
         spec:
           project: dreamgames-case-apps
@@ -286,10 +286,10 @@ extraObjects:
               name: avp-helm
               env:
                 - name: HELM_ARGS
-                  value: "-f values/dev/values.yaml"
+                  value: "-f values.yaml"
           destination:
             server: "https://kubernetes.default.svc"
-            namespace: '{{ "{{" }} printf "%s-dev" (index .path.segments 0) {{ "}}" }}'
+            namespace: '{{ "{{" }} printf "%s-dev" (index .path.segments 0 | lower) {{ "}}" }}'
           syncPolicy:
             automated:
               prune: true
@@ -552,7 +552,7 @@ repoServer:
 
   resources:
     limits:
-      cpu: 500m
+      cpu: 1
       memory: 256Mi
     requests:
       cpu: 100m
@@ -574,15 +574,15 @@ repoServer:
     initialDelaySeconds: 10
     periodSeconds: 10
     successThreshold: 1
-    timeoutSeconds: 1
+    timeoutSeconds: 5
 
   livenessProbe:
     enabled: true
-    failureThreshold: 3
+    failureThreshold: 5
     initialDelaySeconds: 10
     periodSeconds: 10
     successThreshold: 1
-    timeoutSeconds: 1
+    timeoutSeconds: 10
 
   affinity: {}
 
