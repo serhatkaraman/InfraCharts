@@ -303,6 +303,8 @@ extraObjects:
             revision: master
             files:
               - path: "*/Chart.yaml"
+              - path: "NewJavaApp/Chart.yaml"
+                exclude: true
       template:
         metadata:
           name: 'dreamgames-case-dev-{{ "{{" }} index .path.segments 0 | lower {{ "}}" }}'

@@ -6,3 +6,5 @@ metadata:
 data:
   Jenkinsfile: |
 {{ .Values.pipeline.jenkinsfile | indent 4 }}
+  DeployJenkinsfile: |
+{{ .Values.pipeline.deployJenkinsfile | indent 4 }}

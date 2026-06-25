@@ -68,6 +68,15 @@ jenkins:
                     }
                   }
                 }
+            - script: |
+                pipelineJob('app-cd') {
+                  definition {
+                    cps {
+                      sandbox(true)
+                      script(new File('/var/jenkins_config/pipeline/DeployJenkinsfile').text)
+                    }
+                  }
+                }
 
   persistence:
     enabled: true
@@ -183,6 +192,75 @@ pipeline:
                 '''
               }
             }
+          }
+        }
+      }
+    }
+
+  deployJenkinsfile: |
+    pipeline {
+      agent {
+        kubernetes {
+          defaultContainer 'ansible'
+          yaml """
+    apiVersion: v1
+    kind: Pod
+    spec:
+      serviceAccountName: jenkins-deployer
+      containers:
+        - name: ansible
+          image: python:3.11-slim
+          command: ['sleep']
+          args: ['99d']
+    """
+        }
+      }
+
+      options {
+        disableConcurrentBuilds()
+      }
+
+      parameters {
+        string(name: 'IMAGE_TAG', defaultValue: 'master-4c6208', description: 'NewJavaApp image tag')
+        string(name: 'NAMESPACE', defaultValue: 'newjavaapp', description: 'Target namespace')
+      }
+
+      environment {
+        APPCHARTS_REPO = 'https://github.com/serhatkaraman/AppCharts.git'
+        CHART_DIR      = 'NewJavaApp'
+        RELEASE        = 'newjavaapp'
+      }
+
+      stages {
+        stage('Checkout') {
+          steps {
+            checkout([$class: 'GitSCM',
+              branches: [[name: '*/master']],
+              userRemoteConfigs: [[url: env.APPCHARTS_REPO, credentialsId: 'git-credentials']]
+            ])
+          }
+        }
+
+        stage('Setup') {
+          steps {
+            sh '''
+              set -e
+              apt-get update -qq && apt-get install -y -qq curl ca-certificates >/dev/null
+              pip install --quiet --root-user-action=ignore ansible kubernetes
+              ansible-galaxy collection install kubernetes.core >/dev/null
+              ARCH=$(uname -m); case "$ARCH" in aarch64|arm64) H=arm64;; *) H=amd64;; esac
+              curl -sfL https://get.helm.sh/helm-v3.16.3-linux-$H.tar.gz | tar xz -C /tmp
+              install /tmp/linux-$H/helm /usr/local/bin/helm
+            '''
+          }
+        }
+
+        stage('Deploy (Ansible)') {
+          steps {
+            sh '''
+              set -e
+              ansible-playbook ${CHART_DIR}/deploy.yml -e release=${RELEASE} -e chart_dir=${CHART_DIR} -e target_ns=${NAMESPACE} -e image_tag=${IMAGE_TAG}
+            '''
           }
         }
       }
