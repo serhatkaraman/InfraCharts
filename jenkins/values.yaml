@@ -10,7 +10,7 @@ jenkins:
       hostName: jenkins.myturkishdish.com
       annotations:
         cert-manager.io/cluster-issuer: "letsencrypt-prod"
-        external-dns.alpha.kubernetes.io/hostname: jenkin.myturkishdish.com
+        external-dns.alpha.kubernetes.io/hostname: jenkins.myturkishdish.com
       tls:
         - secretName: jenkins-tls
           hosts:
