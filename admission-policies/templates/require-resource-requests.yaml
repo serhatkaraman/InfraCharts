@@ -1,0 +1,38 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: require-resource-requests
+spec:
+  failurePolicy: {{ .Values.failurePolicy }}
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments"]
+  validations:
+    - expression: >-
+        object.spec.template.spec.containers.all(c,
+          has(c.resources.requests) &&
+          'cpu' in c.resources.requests &&
+          'memory' in c.resources.requests)
+      message: "Every container must set resources.requests.cpu and resources.requests.memory."
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: require-resource-requests
+spec:
+  policyName: require-resource-requests
+  validationActions:
+    - Deny
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+            {{- range .Values.enforcedNamespaces }}
+            - {{ . }}
+            {{- end }}

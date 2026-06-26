@@ -1,0 +1,4 @@
+failurePolicy: Fail
+enforcedNamespaces:
+  - newjavaapp
+  - javaapp-dev

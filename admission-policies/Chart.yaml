@@ -1,0 +1,4 @@
+apiVersion: v2
+name: admission-policies
+version: 0.1.0
+description: Cluster admission policies (ValidatingAdmissionPolicy) for dreamgames-case
