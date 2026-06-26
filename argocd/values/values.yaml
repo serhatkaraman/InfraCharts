@@ -261,6 +261,7 @@ extraObjects:
               - path: "eck-operator/Chart.yaml"
               - path: "elasticsearch/Chart.yaml"
               - path: "admission-policies/Chart.yaml"
+              - path: "argo-rollouts/Chart.yaml"
       template:
         metadata:
           name: 'dreamgames-case-{{ "{{" }} index .path.segments 0 {{ "}}" }}'

@@ -1,0 +1,12 @@
+argo-rollouts:
+  installCRDs: true
+  controller:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
+  dashboard:
+    enabled: false
