@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dreamgames-overview-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    grafana_dashboard: "1"
+data:
+  dreamgames-overview.json: |
+{{ .Files.Get "dashboards/overview.json" | indent 4 }}

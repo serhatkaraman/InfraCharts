@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pod-restart-alerts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: {{ .Release.Name }}
+    app: kube-prometheus-stack
+spec:
+  groups:
+    - name: pod-lifecycle
+      rules:
+        - alert: PodRestarted
+          expr: increase(kube_pod_container_status_restarts_total[5m]) > 0
+          for: 0m
+          labels:
+            severity: warning
+          annotations:
+            summary: 'Pod restarted: {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.pod {{ "}}" }}'
+            description: 'Container {{ "{{" }} $labels.container {{ "}}" }} in {{ "{{" }} $labels.namespace {{ "}}" }}/{{ "{{" }} $labels.pod {{ "}}" }} restarted {{ "{{" }} $value | printf "%.0f" {{ "}}" }} time(s) in the last 5m.'
