@@ -324,6 +324,11 @@ extraObjects:
           destination:
             server: "https://kubernetes.default.svc"
             namespace: '{{ "{{" }} printf "%s-dev" (index .path.segments 0 | lower) {{ "}}" }}'
+          ignoreDifferences:
+            - group: apps
+              kind: Deployment
+              jsonPointers:
+                - /spec/replicas
           syncPolicy:
             automated:
               prune: true
