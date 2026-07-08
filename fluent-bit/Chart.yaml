@@ -11,3 +11,7 @@ dependencies:
     alias: events
     version: 0.57.7
     repository: https://fluent.github.io/helm-charts
+  - name: fluent-bit
+    alias: aggregator
+    version: 0.57.7
+    repository: https://fluent.github.io/helm-charts

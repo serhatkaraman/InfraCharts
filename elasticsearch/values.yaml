@@ -7,3 +7,11 @@ storage:
   storageClass: local-path
 
 kibanaHost: kibana.myturkishdish.com
+
+ilm:
+  enabled: true
+  dataStream: logs-app-default
+  rolloverMaxPrimaryShardSize: 1gb
+  rolloverMaxAge: 1d
+  retention: 7d
+  numberOfReplicas: 0
